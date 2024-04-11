@@ -1,43 +1,32 @@
-# netstatgo
+# Ports-go
+Ports-go is a Network Monitor that shows real-time network connection tracking tool built in Go. It lists active network connections along with associated processes, updating this information periodically. The tool provides insights into network activity on your system.
 
-> John Hammond | Monday, April 10, 2023
+## Description
+This tool scans and displays active network connections on your system. For each connection, it shows details like protocol, local and remote addresses, connection state, and the associated process. It's designed to update this information in real-time, allowing users to monitor their network activity continuously. The output is displayed in a terminal-based user interface and can be exited gracefully with a Control+C command.
 
----------------
+### Features
+Real-time monitoring of network connections.
+Displays protocol, local and remote IP addresses, state, and associated process name.
+Color-coded output for better readability (on compatible terminals).
+Updates data periodically.
+Graceful exit using Control+C.
+Installation
+To install and run Go Network Monitor, follow these steps:
 
-Crappy Golang code to list local listening ports and their associated processes, much like `netstat -anob` on Windows.
+Ensure you have Go installed on your system. Download Go if you haven't installed it yet.
 
-To receive all possible information, run as an administrator.
+Clone the repository or download the source code.
 
-## Sample Output
+Navigate to the source code directory.
 
-```
-Proto   Local Address             Foreign Address           State      PID/Name
-TCP     0.0.0.0:135               0.0.0.0:0                 LISTEN     1948      /svchost.exe
-TCP     0.0.0.0:445               0.0.0.0:0                 LISTEN     4         /System
-TCP     0.0.0.0:903               0.0.0.0:0                 LISTEN     6092      /vmware-authd.exe
-TCP     0.0.0.0:913               0.0.0.0:0                 LISTEN     6092      /vmware-authd.exe
-TCP     0.0.0.0:1824              0.0.0.0:0                 LISTEN     18144     /WaveLink.exe
-TCP     0.0.0.0:3389              0.0.0.0:0                 LISTEN     1220      /svchost.exe
-TCP     0.0.0.0:5040              0.0.0.0:0                 LISTEN     11008     /svchost.exe
-TCP     0.0.0.0:7680              0.0.0.0:0                 LISTEN     10192     /svchost.exe
-TCP     0.0.0.0:49664             0.0.0.0:0                 LISTEN     1632      /lsass.exe
-TCP     0.0.0.0:49665             0.0.0.0:0                 LISTEN     1536      /wininit.exe
-TCP     0.0.0.0:49666             0.0.0.0:0                 LISTEN     1052      /svchost.exe
-TCP     0.0.0.0:49667             0.0.0.0:0                 LISTEN     2908      /svchost.exe
-TCP     0.0.0.0:49668             0.0.0.0:0                 LISTEN     3104      /svchost.exe
-TCP     0.0.0.0:49669             0.0.0.0:0                 LISTEN     4884      /spoolsv.exe
-TCP     0.0.0.0:49671             0.0.0.0:0                 LISTEN     1612      /services.exe
-TCP     127.0.0.1:28198           0.0.0.0:0                 LISTEN     18144     /WaveLink.exe
-TCP     127.0.0.1:37373           0.0.0.0:0                 LISTEN     32188     /gocode.exe
-TCP     127.0.0.1:49670           0.0.0.0:0                 LISTEN     5512      /dirmngr.exe
-TCP     127.0.0.1:50796           0.0.0.0:0                 LISTEN     5212      /dbus-daemon.exe
-TCP     127.0.0.1:50796           0.0.0.0:0                 LISTEN     5212      /dbus-daemon.exe
-TCP     127.0.0.1:56993           127.0.0.1:56994           ESTABLISHED 27928     /Zoom.exe
-TCP     127.0.0.1:56994           127.0.0.1:56993           ESTABLISHED 27928     /Zoom.exe
-TCP     127.0.0.1:58582           127.0.0.1:58583           ESTABLISHED 11252     /vmware.exe
-TCP     127.0.0.1:58583           127.0.0.1:58582           ESTABLISHED 11252     /vmware.exe
-TCP     127.0.0.1:58586           127.0.0.1:58587           ESTABLISHED 11252     /vmware.exe
-TCP     127.0.0.1:58587           127.0.0.1:58586           ESTABLISHED 11252     /vmware.exe
-TCP     127.0.0.1:58588           127.0.0.1:58589           ESTABLISHED 11252     /vmware.exe
-TCP     127.0.0.1:58589           127.0.0.1:58588           ESTABLISHED 11252     /vmware.exe
-```
+Compile the program with `go build`
+Run the executable.
+
+On Unix-like systems:
+Run the executable.
+`./ports-go`
+On Windows:
+`ports-go.exe`
+
+## Usage
+Once running, the program will display a table of active network connections updating in real-time. Press `Control+C` at any time to exit the program.
