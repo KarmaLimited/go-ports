@@ -15,6 +15,17 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
+var scrollOffset int = 0
+var conns []net.ConnectionStat
+
+func updateConnections() {
+	var err error
+	conns, err = net.Connections("all")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func protocolToString(connType uint32, ip string) string {
 	isIPv6 := strings.Contains(ip, ":")
 	switch connType {
@@ -33,21 +44,24 @@ func protocolToString(connType uint32, ip string) string {
 	}
 }
 
-func displayNetworkInfo(s tcell.Screen) {
+func displayNetworkInfo(s tcell.Screen, scrollOffset int) {
 	s.Clear()
-
-	conns, err := net.Connections("all")
-	if err != nil {
-		log.Fatal(err)
-	}
+	updateConnections() 
 
 	titles := []string{"Protocol", "Local Address", "Foreign Address", "State", "PID", "Process Name"}
 	columnWidths := []int{10, 30, 30, 20, 10, 25}
-printRow(s, titles, columnWidths, 0, tcell.StyleDefault.Bold(true).Foreground(tcell.ColorWhite))
+	printRow(s, titles, columnWidths, 0, tcell.StyleDefault.Bold(true).Foreground(tcell.ColorWhite))
 
+	_, height := s.Size() // Retrieve height here to limit scope
+	visibleRows := height - 1
+	startIndex := scrollOffset
+	endIndex := startIndex + visibleRows
+	if endIndex > len(conns) {
+		endIndex = len(conns)
+	}
 
 	row := 1
-	for _, conn := range conns {
+	for _, conn := range conns[startIndex:endIndex] { // Slice conns based on startIndex and endIndex
 		if conn.Pid == 0 {
 			continue
 		}
@@ -69,20 +83,18 @@ printRow(s, titles, columnWidths, 0, tcell.StyleDefault.Bold(true).Foreground(tc
 		if row%2 == 1 {
 			bgColor = tcell.ColorGray
 		}
-printRow(s, values, columnWidths, row, tcell.StyleDefault.Background(bgColor).Foreground(tcell.ColorWhite), procName)
-
+		printRow(s, values, columnWidths, row, tcell.StyleDefault.Background(bgColor).Foreground(tcell.ColorGainsboro))
 		row++
 	}
 
 	s.Show()
 }
 
-func printRow(s tcell.Screen, cols []string, widths []int, row int, style tcell.Style, procName ...string) {
+func printRow(s tcell.Screen, cols []string, widths []int, row int, style tcell.Style) {
 	x := 0
 	for i, col := range cols {
-		// Default text color is white
 		currentStyle := style.Foreground(tcell.ColorWhite)
-		if i == 5 && len(procName) > 0 && cols[i] == procName[0] {
+		if i == 5 { // Check if current column is 'Process Name'
 			currentStyle = style.Foreground(tcell.ColorRoyalBlue)
 		}
 		for _, r := range fmt.Sprintf("%-*s", widths[i], col) {
@@ -114,8 +126,20 @@ func main() {
 			ev := s.PollEvent()
 			switch ev := ev.(type) {
 			case *tcell.EventKey:
-				if ev.Key() == tcell.KeyCtrlC {
+				switch ev.Key() {
+				case tcell.KeyCtrlC:
 					sigChan <- syscall.SIGINT
+				case tcell.KeyUp:
+					if scrollOffset > 0 {
+						scrollOffset--
+						displayNetworkInfo(s, scrollOffset)
+					}
+				case tcell.KeyDown:
+					_, height := s.Size() // Retrieve height here again for scrolling calculation
+					if scrollOffset < len(conns)-height {
+						scrollOffset++
+						displayNetworkInfo(s, scrollOffset)
+					}
 				}
 			}
 		}
@@ -124,14 +148,16 @@ func main() {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-loop:
+	displayNetworkInfo(s, scrollOffset) // Initial display
+
 	for {
 		select {
 		case <-ticker.C:
-			displayNetworkInfo(s)
+			displayNetworkInfo(s, scrollOffset)
 		case <-sigChan:
-			break loop
+			fmt.Println("\nExiting...")
+			return
 		}
 	}
-	fmt.Println("\nExiting...")
+
 }
