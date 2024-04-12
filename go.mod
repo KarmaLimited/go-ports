@@ -1,4 +1,4 @@
-module github.com/2lach/ports-go
+module github.com/KarmaLimited/ports-go
 
 go 1.22.2
 
