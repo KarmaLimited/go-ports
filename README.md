@@ -37,7 +37,7 @@ On Unix-like systems: Run the executable. `./ports-go` On Windows:
 or install it with
 
 ```golang
-go install github.com/KarmaLimited/go-ports@latest                  12:19
+go install github.com/KarmaLimited/go-ports@latest
 ```
 
 and it will end up in your `~/go/bin`
