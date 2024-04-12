@@ -5,12 +5,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
 )
@@ -18,12 +18,12 @@ import (
 func protocolToString(connType uint32, ip string) string {
 	isIPv6 := strings.Contains(ip, ":")
 	switch connType {
-	case syscall.SOCK_STREAM: // TCP
+	case syscall.SOCK_STREAM:
 		if isIPv6 {
 			return "TCP6"
 		}
 		return "TCP"
-	case syscall.SOCK_DGRAM: // UDP
+	case syscall.SOCK_DGRAM:
 		if isIPv6 {
 			return "UDP6"
 		}
@@ -33,81 +33,105 @@ func protocolToString(connType uint32, ip string) string {
 	}
 }
 
-func displayNetworkInfo() {
-	// Get network connections
+func displayNetworkInfo(s tcell.Screen) {
+	s.Clear()
+
 	conns, err := net.Connections("all")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Print the headers for the table
-	fmt.Printf("%-9s %-25s %-30s %-20s %-10s %-25s\n", "Protocol", "Local Address", "Foreign Address", "State", "PID", "Process Name")
+	titles := []string{"Protocol", "Local Address", "Foreign Address", "State", "PID", "Process Name"}
+	columnWidths := []int{10, 30, 30, 20, 10, 25}
+printRow(s, titles, columnWidths, 0, tcell.StyleDefault.Bold(true).Foreground(tcell.ColorWhite))
 
+
+	row := 1
 	for _, conn := range conns {
-		// Filter out connections with no associated process
 		if conn.Pid == 0 {
 			continue
 		}
 
-		// Get process name
 		proc, err := process.NewProcess(conn.Pid)
 		if err != nil {
-			log.Println(err)
 			continue
 		}
 		procName, err := proc.Name()
 		if err != nil {
-			log.Println(err)
 			continue
 		}
 
-		// Convert the protocol to a string
 		protocol := protocolToString(conn.Type, conn.Laddr.IP)
-
-		// Construct local and remote addresses
 		localAddr := conn.Laddr.IP + ":" + strconv.Itoa(int(conn.Laddr.Port))
 		remoteAddr := conn.Raddr.IP + ":" + strconv.Itoa(int(conn.Raddr.Port))
-
-		// Check OS and apply color if not Windows
-		var coloredProcName string
-		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" { // darwin is for macOS
-			blue := "\033[34m"
-			reset := "\033[0m"
-			coloredProcName = fmt.Sprintf("%s%s%s", blue, procName, reset)
-		} else {
-			// For Windows or other OSes, print without color
-			coloredProcName = procName
+		values := []string{protocol, localAddr, remoteAddr, conn.Status, strconv.Itoa(int(conn.Pid)), procName}
+		bgColor := tcell.ColorBlack
+		if row%2 == 1 {
+			bgColor = tcell.ColorGray
 		}
+printRow(s, values, columnWidths, row, tcell.StyleDefault.Background(bgColor).Foreground(tcell.ColorWhite), procName)
 
-		// Print the connection details
-		fmt.Printf("%-9s %-25s %-30s %-20s %-10d %-25s\n", protocol, localAddr, remoteAddr, conn.Status, conn.Pid, coloredProcName)
+		row++
 	}
+
+	s.Show()
 }
 
-func clearScreen() {
-	fmt.Print("\033[H\033[2J")
-	// fmt.Print("\033[H\033[2J\033[3J")
+func printRow(s tcell.Screen, cols []string, widths []int, row int, style tcell.Style, procName ...string) {
+	x := 0
+	for i, col := range cols {
+		// Default text color is white
+		currentStyle := style.Foreground(tcell.ColorWhite)
+		if i == 5 && len(procName) > 0 && cols[i] == procName[0] {
+			currentStyle = style.Foreground(tcell.ColorRoyalBlue)
+		}
+		for _, r := range fmt.Sprintf("%-*s", widths[i], col) {
+			s.SetContent(x, row, r, nil, currentStyle)
+			x++
+		}
+		x++ // Space between columns
+	}
 }
 
 func main() {
-	// Setup a channel to listen for SIGINT signals (Control+C)
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT)
+	s, err := tcell.NewScreen()
+	if err != nil {
+		log.Fatalf("failed to create screen: %v", err)
+	}
+	if err := s.Init(); err != nil {
+		log.Fatalf("failed to initialize screen: %v", err)
+	}
+	defer s.Fini()
 
-	// Set up a ticker for periodic refresh, adjust the duration for refresh rate
-	ticker := time.NewTicker(5 * time.Second)
+	s.EnableMouse()
+	s.Clear()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		for {
+			ev := s.PollEvent()
+			switch ev := ev.(type) {
+			case *tcell.EventKey:
+				if ev.Key() == tcell.KeyCtrlC {
+					sigChan <- syscall.SIGINT
+				}
+			}
+		}
+	}()
+
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
+loop:
 	for {
 		select {
 		case <-ticker.C:
-			clearScreen()
-			displayNetworkInfo()
-
+			displayNetworkInfo(s)
 		case <-sigChan:
-			clearScreen()
-			fmt.Println("\nExiting...")
-			return
+			break loop
 		}
 	}
+	fmt.Println("\nExiting...")
 }
