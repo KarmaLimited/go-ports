@@ -34,14 +34,33 @@ Compile the program with `go build` Run the executable.
 On Unix-like systems: Run the executable. `./ports-go` On Windows:
 `ports-go.exe`
 
+or install it with
+
+```golang
+go install github.com/KarmaLimited/go-ports@latest                  12:19
+```
+
+and it will end up in your `~/go/bin`
+
 ## Usage
 
 Once running, the program will display a table of active network connections
 updating in real-time. Press `Control+C` at any time to exit the program.
+
+## Contributions
+
+Are most welcome as long as they are relevant improvements
+
+## Lawyering
+
+This is not perfect this is something i whipped up one late afternoon cause i
+wanted it, it's built and tested on a mac and should work on both linux and
+windows, notice how i said should, thats because im not sure. So no whining if
+it doesnt work on your machine cause it might not, if thats the case fix it and
+setup a PR, please and thank you.
 
 ### Credits
 
 this is a small tribute to another similiar application called ports, which
 pretty much a simple script in bash that once upon a time helped me figure out
 why applications used what ports and why and it was pretty awesome.
-
