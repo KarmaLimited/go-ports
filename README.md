@@ -1,4 +1,4 @@
-# Ports-go
+# go-ports
 
 Ports-go is a Network Monitor that shows real-time network connection tracking.
 It lists active network connections along with associated processes, updating
